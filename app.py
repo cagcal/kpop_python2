@@ -8,7 +8,7 @@ st.write("Upload your K-Pop data file to get started.")
 uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
 
 if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+    df = pd.read_excel(uploaded_file, engine="openpyxl")
 
     # Group Filter
     group_list = df["Group"].dropna().unique()
