@@ -3,10 +3,10 @@ import pandas as pd
 import plotly.express as px
 import datetime
 
-# Set up the app
+# Set up the Streamlit app
 st.set_page_config(page_title="K-Pop Insights App", layout="wide")
 
-# 📌 Zodiac Sign Calculation Function
+# 📌 Zodiac Sign Calculation
 def get_zodiac_sign(month, day):
     if (month == 3 and day >= 21) or (month == 4 and day <= 19):
         return "Aries"
@@ -35,7 +35,7 @@ def get_zodiac_sign(month, day):
     else:
         return "Unknown"
 
-# Sidebar: Upload Excel File
+# Upload Excel file
 st.sidebar.title("📂 Upload Your K-Pop Data")
 uploaded_file = st.sidebar.file_uploader("Choose an Excel file", type=["xlsx"])
 
@@ -49,7 +49,7 @@ if uploaded_file:
             lambda d: get_zodiac_sign(d.month, d.day) if pd.notnull(d) else "Unknown"
         )
 
-    # Sidebar: Navigation
+    # Navigation
     st.sidebar.title("🔍 Navigation")
     page = st.sidebar.radio("Go to", [
         "Overview",
@@ -59,14 +59,14 @@ if uploaded_file:
         "Zodiac Signs"
     ])
 
-    # Sidebar: Filters
+    # Filters
     st.sidebar.header("🎛️ Filter Options")
     selected_group = st.sidebar.selectbox("🎤 Select Group", ["All"] + sorted(df["Group"].dropna().unique()))
     selected_gender = st.sidebar.multiselect("👤 Select Gender", df["Gender"].dropna().unique(), default=df["Gender"].dropna().unique())
     selected_country = st.sidebar.multiselect("🌍 Select Country", df["Country"].dropna().unique())
     search_query = st.sidebar.text_input("🔎 Search Singer by Name", "")
 
-    # Filter logic
+    # Filter Function
     def filter_data(data):
         filtered = data.copy()
         if selected_group != "All":
@@ -81,12 +81,12 @@ if uploaded_file:
 
     df_filtered = filter_data(df)
 
-    # Overview
+    # PAGE: Overview
     if page == "Overview":
         st.header("📊 K-Pop Dataset Overview")
         st.dataframe(df_filtered)
 
-    # Groups
+    # PAGE: Groups
     elif page == "Groups":
         st.header("🎶 K-Pop Groups & Members")
         group_counts = df_filtered["Group"].value_counts().reset_index()
@@ -94,7 +94,7 @@ if uploaded_file:
         fig_group = px.bar(group_counts, x="Group", y="Count", title="Group Sizes", color="Group")
         st.plotly_chart(fig_group)
 
-    # Gender
+    # PAGE: Gender Distribution
     elif page == "Gender Distribution":
         st.header("👤 Gender Ratio in K-Pop")
         gender_counts = df_filtered["Gender"].value_counts().reset_index()
@@ -102,38 +102,47 @@ if uploaded_file:
         fig_gender = px.pie(gender_counts, names="Gender", values="Count", title="Gender Distribution")
         st.plotly_chart(fig_gender)
 
-    # Visualizations
+    # PAGE: Visualizations
     elif page == "Visualizations":
         st.header("📈 K-Pop Visual Stats")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("🎻 Height Distribution (Violin Plot)")
-            fig_height = px.violin(
+            st.subheader("📏 Height Distribution (Histogram)")
+            fig_height = px.histogram(
                 df_filtered,
-                y="Height",
-                color="Gender",
-                box=True,
-                points="all",
-                title="Height Distribution by Gender"
+                x="Height",
+                nbins=30,
+                title="Height Distribution of K-Pop Idols",
+                color="Gender"
             )
             st.plotly_chart(fig_height)
 
         with col2:
-            st.subheader("⚖ Weight Distribution")
-            fig_weight = px.histogram(df_filtered, x="Weight", title="Weight Distribution", color="Gender")
+            st.subheader("⚖ Weight Distribution (Box Plot)")
+            fig_weight = px.box(
+                df_filtered,
+                y="Weight",
+                color="Gender",
+                title="Weight Distribution of K-Pop Idols"
+            )
             st.plotly_chart(fig_weight)
 
         st.subheader("📅 Age Distribution (by Birth Year)")
         if "Date of Birth" in df_filtered.columns:
             df_filtered["Birth Year"] = df_filtered["Date of Birth"].dt.year
-            fig_age = px.histogram(df_filtered.dropna(subset=["Birth Year"]), x="Birth Year", title="Age Distribution", color="Gender")
+            fig_age = px.histogram(
+                df_filtered.dropna(subset=["Birth Year"]),
+                x="Birth Year",
+                title="Age Distribution of K-Pop Idols",
+                color="Gender"
+            )
             st.plotly_chart(fig_age)
         else:
             st.warning("⚠️ 'Date of Birth' column is missing or invalid.")
 
-    # Zodiac Signs
+    # PAGE: Zodiac Signs
     elif page == "Zodiac Signs":
         st.header("🔮 Most Common Zodiac Signs in K-Pop")
         if "Zodiac Sign" not in df_filtered.columns:
