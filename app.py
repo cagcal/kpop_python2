@@ -1,72 +1,52 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import datetime
 
-# Set up the Streamlit app
+# --- Streamlit page config ---
 st.set_page_config(page_title="K-Pop Insights App", layout="wide")
 
-# 📌 Zodiac Sign Calculation
+# --- Function: Get zodiac sign from birth date ---
 def get_zodiac_sign(month, day):
-    if (month == 3 and day >= 21) or (month == 4 and day <= 19):
-        return "Aries"
-    elif (month == 4 and day >= 20) or (month == 5 and day <= 20):
-        return "Taurus"
-    elif (month == 5 and day >= 21) or (month == 6 and day <= 20):
-        return "Gemini"
-    elif (month == 6 and day >= 21) or (month == 7 and day <= 22):
-        return "Cancer"
-    elif (month == 7 and day >= 23) or (month == 8 and day <= 22):
-        return "Leo"
-    elif (month == 8 and day >= 23) or (month == 9 and day <= 22):
-        return "Virgo"
-    elif (month == 9 and day >= 23) or (month == 10 and day <= 22):
-        return "Libra"
-    elif (month == 10 and day >= 23) or (month == 11 and day <= 21):
-        return "Scorpio"
-    elif (month == 11 and day >= 22) or (month == 12 and day <= 21):
-        return "Sagittarius"
-    elif (month == 12 and day >= 22) or (month == 1 and day <= 19):
-        return "Capricorn"
-    elif (month == 1 and day >= 20) or (month == 2 and day <= 18):
-        return "Aquarius"
-    elif (month == 2 and day >= 19) or (month == 3 and day <= 20):
-        return "Pisces"
-    else:
-        return "Unknown"
+    if (month == 3 and day >= 21) or (month == 4 and day <= 19): return "Aries"
+    elif (month == 4 and day >= 20) or (month == 5 and day <= 20): return "Taurus"
+    elif (month == 5 and day >= 21) or (month == 6 and day <= 20): return "Gemini"
+    elif (month == 6 and day >= 21) or (month == 7 and day <= 22): return "Cancer"
+    elif (month == 7 and day >= 23) or (month == 8 and day <= 22): return "Leo"
+    elif (month == 8 and day >= 23) or (month == 9 and day <= 22): return "Virgo"
+    elif (month == 9 and day >= 23) or (month == 10 and day <= 22): return "Libra"
+    elif (month == 10 and day >= 23) or (month == 11 and day <= 21): return "Scorpio"
+    elif (month == 11 and day >= 22) or (month == 12 and day <= 21): return "Sagittarius"
+    elif (month == 12 and day >= 22) or (month == 1 and day <= 19): return "Capricorn"
+    elif (month == 1 and day >= 20) or (month == 2 and day <= 18): return "Aquarius"
+    elif (month == 2 and day >= 19) or (month == 3 and day <= 20): return "Pisces"
+    else: return "Unknown"
 
-# Upload Excel file
+# --- Sidebar: Upload Excel file ---
 st.sidebar.title("📂 Upload Your K-Pop Data")
 uploaded_file = st.sidebar.file_uploader("Choose an Excel file", type=["xlsx"])
 
 if uploaded_file:
+    # --- Load and preprocess data ---
     df = pd.read_excel(uploaded_file, engine="openpyxl")
-
-    # Generate Zodiac Signs
     if "Date of Birth" in df.columns:
         df["Date of Birth"] = pd.to_datetime(df["Date of Birth"], errors="coerce")
         df["Zodiac Sign"] = df["Date of Birth"].apply(
             lambda d: get_zodiac_sign(d.month, d.day) if pd.notnull(d) else "Unknown"
         )
+        df["Age"] = pd.to_datetime("today").year - df["Date of Birth"].dt.year
 
-    # Navigation
+    # --- Sidebar: Navigation ---
     st.sidebar.title("🔍 Navigation")
-    page = st.sidebar.radio("Go to", [
-        "Overview",
-        "Groups",
-        "Gender Distribution",
-        "Visualizations",
-        "Zodiac Signs"
-    ])
+    page = st.sidebar.radio("Go to", ["Overview", "Groups", "Gender Distribution", "Visualizations", "Zodiac Signs"])
 
-    # Filters
+    # --- Sidebar: Filters ---
     st.sidebar.header("🎛️ Filter Options")
     selected_group = st.sidebar.selectbox("🎤 Select Group", ["All"] + sorted(df["Group"].dropna().unique()))
     selected_gender = st.sidebar.multiselect("👤 Select Gender", df["Gender"].dropna().unique(), default=df["Gender"].dropna().unique())
     selected_country = st.sidebar.multiselect("🌍 Select Country", df["Country"].dropna().unique())
     search_query = st.sidebar.text_input("🔎 Search Singer by Name", "")
 
-    # Filter Function
+    # --- Filter logic ---
     def filter_data(data):
         filtered = data.copy()
         if selected_group != "All":
@@ -81,12 +61,12 @@ if uploaded_file:
 
     df_filtered = filter_data(df)
 
-    # PAGE: Overview
+    # --- Page: Overview ---
     if page == "Overview":
         st.header("📊 K-Pop Dataset Overview")
         st.dataframe(df_filtered)
 
-    # PAGE: Groups
+    # --- Page: Groups ---
     elif page == "Groups":
         st.header("🎶 K-Pop Groups & Members")
         group_counts = df_filtered["Group"].value_counts().reset_index()
@@ -94,7 +74,7 @@ if uploaded_file:
         fig_group = px.bar(group_counts, x="Group", y="Count", title="Group Sizes", color="Group")
         st.plotly_chart(fig_group)
 
-    # PAGE: Gender Distribution
+    # --- Page: Gender Distribution ---
     elif page == "Gender Distribution":
         st.header("👤 Gender Ratio in K-Pop")
         gender_counts = df_filtered["Gender"].value_counts().reset_index()
@@ -102,51 +82,45 @@ if uploaded_file:
         fig_gender = px.pie(gender_counts, names="Gender", values="Count", title="Gender Distribution")
         st.plotly_chart(fig_gender)
 
-    # PAGE: Visualizations
+    # --- Page: Visualizations ---
     elif page == "Visualizations":
-        st.header("📈 K-Pop Visual Stats")
+        st.header("📈 K-Pop Visual Insights")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("📏 Height Distribution (Histogram)")
-            fig_height = px.histogram(
-                df_filtered,
-                x="Height",
-                nbins=30,
-                title="Height Distribution of K-Pop Idols",
-                color="Gender"
-            )
-            st.plotly_chart(fig_height)
+            st.subheader("👵 Top 10 Oldest Idols")
+            oldest = df_filtered.dropna(subset=["Age"]).sort_values(by="Age", ascending=False).head(10)
+            fig_oldest = px.bar(oldest, x="Stage Name", y="Age", color="Gender", title="Top 10 Oldest Idols")
+            st.plotly_chart(fig_oldest)
 
         with col2:
-            st.subheader("⚖ Weight Distribution (Box Plot)")
-            fig_weight = px.box(
-                df_filtered,
-                y="Weight",
-                color="Gender",
-                title="Weight Distribution of K-Pop Idols"
-            )
-            st.plotly_chart(fig_weight)
+            st.subheader("👶 Top 10 Youngest Idols")
+            youngest = df_filtered.dropna(subset=["Age"]).sort_values(by="Age").head(10)
+            fig_youngest = px.bar(youngest, x="Stage Name", y="Age", color="Gender", title="Top 10 Youngest Idols")
+            st.plotly_chart(fig_youngest)
 
-        st.subheader("📅 Age Distribution (by Birth Year)")
-        if "Date of Birth" in df_filtered.columns:
-            df_filtered["Birth Year"] = df_filtered["Date of Birth"].dt.year
-            fig_age = px.histogram(
-                df_filtered.dropna(subset=["Birth Year"]),
-                x="Birth Year",
-                title="Age Distribution of K-Pop Idols",
-                color="Gender"
+        st.subheader("🌍 Idol Count by Country")
+        if "Country" in df_filtered.columns:
+            country_counts = df_filtered["Country"].value_counts().reset_index()
+            country_counts.columns = ["Country", "Count"]
+            fig_country = px.bar(
+                country_counts,
+                x="Country",
+                y="Count",
+                title="K-Pop Idols by Country",
+                color="Count",
+                color_continuous_scale="teal"
             )
-            st.plotly_chart(fig_age)
+            st.plotly_chart(fig_country)
         else:
-            st.warning("⚠️ 'Date of Birth' column is missing or invalid.")
+            st.warning("⚠️ 'Country' column not found.")
 
-    # PAGE: Zodiac Signs
+    # --- Page: Zodiac Signs ---
     elif page == "Zodiac Signs":
         st.header("🔮 Most Common Zodiac Signs in K-Pop")
         if "Zodiac Sign" not in df_filtered.columns:
-            st.warning("⚠️ Zodiac Sign data not found.")
+            st.warning("⚠️ Zodiac Sign column missing.")
         else:
             zodiac_counts = df_filtered["Zodiac Sign"].value_counts().reset_index()
             zodiac_counts.columns = ["Zodiac Sign", "Count"]
@@ -161,4 +135,4 @@ if uploaded_file:
             st.plotly_chart(fig_zodiac)
 
 else:
-    st.warning("📌 Please upload an Excel file to begin.")
+    st.warning("📌 Please upload an Excel file to get started.")
