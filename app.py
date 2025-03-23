@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# --- Streamlit page config ---
+# --- Page setup ---
 st.set_page_config(page_title="K-Pop Insights App", layout="wide")
 
-# --- Function: Get zodiac sign from birth date ---
+# --- Zodiac sign calculator ---
 def get_zodiac_sign(month, day):
     if (month == 3 and day >= 21) or (month == 4 and day <= 19): return "Aries"
     elif (month == 4 and day >= 20) or (month == 5 and day <= 20): return "Taurus"
@@ -21,23 +21,28 @@ def get_zodiac_sign(month, day):
     elif (month == 2 and day >= 19) or (month == 3 and day <= 20): return "Pisces"
     else: return "Unknown"
 
-# --- Sidebar: Upload Excel file ---
+# --- Sidebar: File upload ---
 st.sidebar.title("📂 Upload Your K-Pop Data")
 uploaded_file = st.sidebar.file_uploader("Choose an Excel file", type=["xlsx"])
 
 if uploaded_file:
-    # --- Load and preprocess data ---
     df = pd.read_excel(uploaded_file, engine="openpyxl")
+
+    # --- Preprocessing ---
     if "Date of Birth" in df.columns:
         df["Date of Birth"] = pd.to_datetime(df["Date of Birth"], errors="coerce")
-        df["Zodiac Sign"] = df["Date of Birth"].apply(
-            lambda d: get_zodiac_sign(d.month, d.day) if pd.notnull(d) else "Unknown"
-        )
+        df["Zodiac Sign"] = df["Date of Birth"].apply(lambda d: get_zodiac_sign(d.month, d.day) if pd.notnull(d) else "Unknown")
         df["Age"] = pd.to_datetime("today").year - df["Date of Birth"].dt.year
 
     # --- Sidebar: Navigation ---
     st.sidebar.title("🔍 Navigation")
-    page = st.sidebar.radio("Go to", ["Overview", "Groups", "Gender Distribution", "Visualizations", "Zodiac Signs"])
+    page = st.sidebar.radio("Go to", [
+        "Overview",
+        "Groups",
+        "Gender Distribution",
+        "Visualizations",
+        "Zodiac Signs"
+    ])
 
     # --- Sidebar: Filters ---
     st.sidebar.header("🎛️ Filter Options")
@@ -46,7 +51,7 @@ if uploaded_file:
     selected_country = st.sidebar.multiselect("🌍 Select Country", df["Country"].dropna().unique())
     search_query = st.sidebar.text_input("🔎 Search Singer by Name", "")
 
-    # --- Filter logic ---
+    # --- Filter function ---
     def filter_data(data):
         filtered = data.copy()
         if selected_group != "All":
@@ -109,8 +114,7 @@ if uploaded_file:
                 x="Country",
                 y="Count",
                 title="K-Pop Idols by Country",
-                color="Count",
-                color_continuous_scale="teal"
+                color_discrete_sequence=["#20B2AA"]
             )
             st.plotly_chart(fig_country)
         else:
@@ -129,8 +133,7 @@ if uploaded_file:
                 x="Zodiac Sign",
                 y="Count",
                 title="Most Common Zodiac Signs",
-                color="Count",
-                color_continuous_scale="Blues"
+                color_discrete_sequence=["#6A5ACD"]  # Flat indigo color
             )
             st.plotly_chart(fig_zodiac)
 
